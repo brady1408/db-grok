@@ -1,0 +1,5 @@
+{
+    "ConnectionString": "postgres://postgres:mysecretpassword@tcp(192.168.23.29:3306)/atlascloud?sslmode=disable",
+    "BaseImportPath": "models",
+    "Models": [{"FromTableName": "TableA"}, {"FromTableName": "TableB"}]
+}

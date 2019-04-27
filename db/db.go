@@ -5,8 +5,7 @@ import (
 	"os"
 	"time"
 
-	"database/sql"
-
+	"github.com/jmoiron/sqlx"
 	"github.com/joomcode/errorx"
 	"github.com/sirupsen/logrus"
 
@@ -22,17 +21,13 @@ const (
 )
 
 // SetupConnection will connect to a database and test the connection with a ping.
-func SetupConnection(dsn string) (*sql.DB, error) {
+func SetupConnection(dsn string) (*sqlx.DB, error) {
 	// Case the dns schema to find the type of database
 	log := logrus.New()
 	log.SetOutput(os.Stdout)
 	// log.SetLevel(logrus.DebugLevel)
 	log.Info("Connecting to database server")
-	// Skipping error checking on Open because Open will not always make a connection to the databae.
-	// This reflects negatively on our tests. The connection test will be found below in the Ping.
-	// Ping will open a connection if one does not yet exists, which is rare that it exists if nothing
-	// has tried to use it yet.
-	db, _ := sql.Open("postgres", dsn)
+	sdb, err := sqlx.Open("postgres", dsn)
 	log.Infof("opened connection with dsn: %s", dsn)
 
 	// for loop to retry ping. This is configurable in the consts (DB_PING_ATTEMPTS and DB_PING_TIMEOUT_SECS)
@@ -40,21 +35,20 @@ func SetupConnection(dsn string) (*sql.DB, error) {
 		log.Info("Pinging SQL postgres database")
 		ctx, cancel := context.WithTimeout(context.Background(), DB_PING_TIMEOUT_SECS)
 		defer cancel()
-		err := db.PingContext(ctx)
+		err = sdb.PingContext(ctx)
 		if err == nil {
 			break
 		} else {
 			if i == DB_PING_ATTEMPTS-1 {
-				err = errorx.Decorate(err, "Failed to ping DB, serer will exit err:")
-				return nil, err
+				err = errorx.Decorate(err, "Failed to ping DB, server will exit err:")
+				return sdb, err
 			}
 			err = errorx.Decorate(err, "Failed to ping DB retrying in %d seconds err:", DB_PING_TIMEOUT_SECS)
 			time.Sleep(DB_PING_TIMEOUT_SECS)
 		}
 	}
-	// Logging successfully connected only after a successful ping to the database for reasons described above.
-	// See comments above sql.Open()
+	// Logging successfully connected only after a successful ping to the database
 	log.Info("Successfully Connected to database server")
 
-	return db, nil
+	return sdb, err
 }

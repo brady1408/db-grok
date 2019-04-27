@@ -6,7 +6,7 @@ import (
 
 	"github.com/joomcode/errorx"
 
-	"bitbucket.org/atlascloudapp/db-grok/models"
+	"github.com/brady1408/db-grok/models"
 )
 
 // LoadConfig returns a models.config

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"bitbucket.org/atlascloudapp/db-grok/cmd/dbgrok/command"
+	"github.com/brady1408/db-grok/cmd/dbgrok/command"
 )
 
 func main() {

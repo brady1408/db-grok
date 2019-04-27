@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"bitbucket.org/atlascloudapp/db-grok/db"
+	"github.com/brady1408/db-grok/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,8 +97,8 @@ func TestSetupConnection(t *testing.T) {
 			name: "Test Bad Setup Connection",
 			makeAssertions: func(t *testing.T) {
 				dsn := CreateDSN(TestDBInfo{Host: "", Name: "", User: "", Pass: "", Port: ""})
-				sdb, err := db.SetupConnection(dsn)
-				assert.Nil(t, sdb)
+				assert.Equal(t, "postgres://:@:/?sslmode=disable", dsn)
+				_, err := db.SetupConnection(dsn)
 				assert.Error(t, err)
 			},
 		},

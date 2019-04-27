@@ -1,10 +1,11 @@
 package command
 
 import (
-	"bitbucket.org/atlascloudapp/db-grok/config"
-	"bitbucket.org/atlascloudapp/db-grok/db"
-	"bitbucket.org/atlascloudapp/db-grok/models"
-	"bitbucket.org/atlascloudapp/db-grok/store"
+	"github.com/brady1408/db-grok/config"
+	"github.com/brady1408/db-grok/db"
+	"github.com/brady1408/db-grok/models"
+	"github.com/brady1408/db-grok/store"
+	"github.com/joomcode/errorx"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,7 +21,7 @@ var BuildCmd = &cobra.Command{
 
 func init() {
 	BuildCmd.Flags().StringP("out", "o", ".", "project root directory to build into")
-	BuildCmd.Flags().StringP("config", "c", "builer_config.json", "Path to the builder_conig.json file")
+	BuildCmd.Flags().StringP("config", "c", "builder_config.json", "Path to the builder_config.json file")
 	BuildCmd.Flags().StringSliceP("tables", "t", []string{}, "build for a single table")
 }
 
@@ -34,7 +35,7 @@ func buildCmdF(command *cobra.Command, args []string) error {
 	}
 	log.Info("Config loaded successfully")
 
-	db, err := db.SetupConnection(cfg.ConnectionString)
+	sdb, err := db.SetupConnection(cfg.ConnectionString)
 	if err != nil {
 		log.Errorf("Error setting up the database connection. Err: %v", err)
 		return err
@@ -59,10 +60,28 @@ func buildCmdF(command *cobra.Command, args []string) error {
 		modelList[table.FromTableName] = table.FromTableName
 	}
 
-	allPrimaryKeys, err := store.GetAllPks(db)
+	allPrimaryKeys, err := store.GetAllPks(sdb)
 	if err != nil {
 		log.Errorf("Error getting primary keys: %v", err)
 		return err
+	}
+
+	for _, table := range cfg.Models {
+		//Check if tables were sent in args and include only tables in args
+		if !inArgs(viper.GetStringSlice("tables"), table.FromTableName) {
+			continue
+		}
+
+		//SKIP all generation if this property is set to true
+		if table.Properties.IgnoreForGeneration {
+			continue
+		}
+
+		tableName := table.FromTableName
+		tableType, err := store.GetTableType(sdb, tableName)
+		if err != nil {
+			return errorx.Decorate(err, "Error getting table type: ")
+		}
 	}
 	//TEMP
 	log.Infof("%v", allPrimaryKeys)
