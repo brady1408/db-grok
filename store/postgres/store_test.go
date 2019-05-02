@@ -1,4 +1,4 @@
-package store
+package postgres
 
 import (
 	"os"
@@ -84,6 +84,44 @@ func TestGetTableType(t *testing.T) {
 				tableType, err := GetTableType(sdb, tn)
 				assert.Error(t, err)
 				assert.Equal(t, "", tableType)
+			},
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.makeAssertions(t, tc.tableName)
+		})
+	}
+}
+
+func TestGetPkName(t *testing.T) {
+	sdb, err := db.SetupConnection(test.CreateDSN(test.GetTestDBInfo()))
+	if err != nil {
+		t.Fatal("Error Connecting to database")
+	}
+	tt := []struct {
+		name           string
+		tableName      string
+		makeAssertions func(t *testing.T, tn string)
+	}{
+		{
+			name:      "Good Table",
+			tableName: "orders",
+			makeAssertions: func(t *testing.T, tn string) {
+				pkName, err := GetPkName(sdb, tn)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, "id", pkName)
+			},
+		},
+		{
+			name:      "Bad Table",
+			tableName: "doesnt_exist",
+			makeAssertions: func(t *testing.T, tn string) {
+				pkName, err := GetPkName(sdb, tn)
+				assert.Error(t, err)
+				assert.Equal(t, "", pkName)
 			},
 		},
 	}
